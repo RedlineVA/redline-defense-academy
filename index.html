@@ -264,7 +264,7 @@
     <section id="instructor" class="band">
       <div class="wrap split">
         <div class="photo" aria-label="Redline Defense Academy instructor">
-          <img src="assets/instructor-portrait-fixed.jpg" alt="Redline Defense Academy instructor portrait" loading="lazy" />
+          <img data-b64-chunks="assets/instructor/chunk00.txt,assets/instructor/chunk01.txt,assets/instructor/chunk02.txt,assets/instructor/chunk03.txt,assets/instructor/chunk04.txt,assets/instructor/chunk05.txt,assets/instructor/chunk06.txt,assets/instructor/chunk07.txt,assets/instructor/chunk08.txt,assets/instructor/chunk09.txt" alt="Redline Defense Academy instructor portrait" loading="lazy" />
           <div class="photo-note">
             <b>Experience beyond the classroom.</b>
             <span>Instruction informed by security leadership, personal protection, range safety, and real-world operational experience.</span>
@@ -377,6 +377,13 @@
       }catch(e){ el.style.display='none'; }
     }
     document.querySelectorAll('[data-b64-src]').forEach(el=>loadB64(el,el.dataset.b64Src,el.dataset.mime||'image/jpeg'));
+    document.querySelectorAll('[data-b64-chunks]').forEach(async el=>{
+      try{
+        const paths=el.dataset.b64Chunks.split(',');
+        const parts=await Promise.all(paths.map(async p=>(await (await fetch(p)).text()).trim()));
+        el.src='data:image/jpeg;base64,'+parts.join('');
+      }catch(e){ console.error('Instructor portrait load failed',e); }
+    });
     document.querySelectorAll('[data-b64-video]').forEach(async el=>{
       const videoPath=el.dataset.b64Video, posterPath=el.dataset.posterB64;
       try{

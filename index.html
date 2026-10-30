@@ -31,10 +31,13 @@
     .nav{position:sticky;top:0;z-index:50;background:rgba(7,9,13,.82);backdrop-filter:blur(16px);
       border-bottom:1px solid rgba(255,255,255,.07)}
     .navin{height:74px;display:flex;align-items:center;justify-content:space-between;gap:20px}
-    .brand{display:flex;align-items:center;gap:12px;font-weight:900;letter-spacing:.06em;text-transform:uppercase}
-    .mark{width:38px;height:38px;border:2px solid var(--red);border-radius:50%;display:grid;place-items:center;
-      font-size:11px;letter-spacing:.08em;box-shadow:0 0 0 5px rgba(227,27,35,.09)}
-    .brand span small{display:block;color:var(--muted);font-size:9px;letter-spacing:.19em;font-weight:700}
+    .brand{display:flex;align-items:center;gap:12px;font-weight:900;text-transform:uppercase}
+    .emblem{width:42px;height:48px;display:grid;place-items:center;filter:drop-shadow(0 6px 12px rgba(0,0,0,.35))}
+    .emblem svg{width:100%;height:100%;display:block}
+    .brand-copy{line-height:.95;letter-spacing:.035em}
+    .brand-copy b{font-size:16px;color:#fff}
+    .brand-copy b strong{color:var(--red2)}
+    .brand-copy small{display:block;color:var(--muted);font-size:8px;letter-spacing:.18em;font-weight:800;margin-top:5px}
     .links{display:flex;align-items:center;gap:24px;color:#d9e0ea;font-size:14px;font-weight:700}
     .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:999px;padding:13px 20px;
       font-weight:900;letter-spacing:.01em;cursor:pointer;transition:.2s ease}
@@ -138,8 +141,22 @@
   <nav class="nav" aria-label="Primary navigation">
     <div class="wrap navin">
       <a class="brand" href="#top" aria-label="Redline Defense Academy home">
-        <div class="mark">RDA</div>
-        <span>Redline Defense <small>Academy</small></span>
+        <div class="emblem" aria-hidden="true">
+          <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="metal" x1="0" x2="1">
+                <stop offset="0" stop-color="#777b83"/>
+                <stop offset=".28" stop-color="#e5e7eb"/>
+                <stop offset=".55" stop-color="#8f939a"/>
+                <stop offset=".82" stop-color="#f3f4f6"/>
+                <stop offset="1" stop-color="#686c73"/>
+              </linearGradient>
+            </defs>
+            <path d="M50 4 L88 43 L66 42 L79 78 L55 61 L50 113 L45 61 L21 78 L34 42 L12 43 Z" fill="url(#metal)" stroke="#2c2e33" stroke-width="3"/>
+            <path d="M50 15 L72 39 L58 37 L63 57 L51 49 L50 83 L49 49 L37 57 L42 37 L28 39 Z" fill="#e20d20"/>
+          </svg>
+        </div>
+        <span class="brand-copy"><b><strong>Redline</strong> Defense Academy</b><small>Train • Prepare • Protect</small></span>
       </a>
       <div class="links">
         <a href="#training">Training</a>
@@ -155,6 +172,19 @@
       <div class="wrap hero-grid">
         <div>
           <div class="eyebrow">Professional Firearms Education</div>
+          <div style="display:flex;align-items:center;gap:16px;margin:0 0 22px">
+            <div class="emblem" style="width:58px;height:68px">
+              <svg viewBox="0 0 100 120" xmlns="http://www.w3.org/2000/svg">
+                <defs><linearGradient id="metalHero" x1="0" x2="1"><stop offset="0" stop-color="#777b83"/><stop offset=".28" stop-color="#f1f2f4"/><stop offset=".55" stop-color="#8f939a"/><stop offset=".82" stop-color="#ffffff"/><stop offset="1" stop-color="#686c73"/></linearGradient></defs>
+                <path d="M50 4 L88 43 L66 42 L79 78 L55 61 L50 113 L45 61 L21 78 L34 42 L12 43 Z" fill="url(#metalHero)" stroke="#2c2e33" stroke-width="3"/>
+                <path d="M50 15 L72 39 L58 37 L63 57 L51 49 L50 83 L49 49 L37 57 L42 37 L28 39 Z" fill="#e20d20"/>
+              </svg>
+            </div>
+            <div class="brand-copy" style="line-height:.9">
+              <b style="font-size:22px"><strong>Redline</strong> Defense Academy</b>
+              <small style="font-size:9px;margin-top:7px">Train • Prepare • Protect</small>
+            </div>
+          </div>
           <h1>Train with <span class="red">purpose.</span><br>Carry with confidence.</h1>
           <p class="lead">Serious instruction for responsible gun owners. Redline Defense Academy combines safety-first fundamentals, practical skills, and experienced instruction for new shooters, permit applicants, and experienced firearm owners.</p>
           <div class="cta-row">

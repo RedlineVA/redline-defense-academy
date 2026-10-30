@@ -522,7 +522,7 @@ footer{padding:38px 0 24px;border-top:1px solid #232429;background:#020203}
         </form>
 
         <div class="payment">
-          <div class="pay"><b>Cash App</b><span>$redlineservicesVA</span></div>
+          <div class="pay"><b>Cash App</b><span><a href="https://cash.app/$redlineservicesVA" target="_blank" rel="noopener">$redlineservicesVA</a></span></div>
           <div class="pay"><b>Zelle</b><span>540-205-6500</span></div>
         </div>
         <div class="policy">Deposits are credited to tuition. Student cancellations: more than 48 hours before class may receive one reschedule if space is available; inside 48 hours and no-shows forfeit the deposit. If Redline cancels or minimum enrollment is not reached, choose a refund or transfer.</div>
@@ -630,8 +630,14 @@ Seats: ${seats}
 Deposit method: ${method}
 
 I want to reserve my seat(s) for the Nov. 15 Redline Defense Academy Virginia Concealed Handgun Permit Training.`;
-  window.location.href='sms:+15402056500?&body='+encodeURIComponent(msg);
+  const mobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(mobile){
+    window.location.href='sms:+15402056500?body='+encodeURIComponent(msg);
+  }else{
+    const subject='Virginia Class 11/15 Reservation';
+    window.location.href='mailto:redlinedefenseacademy@gmail.com?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(msg);
+  }
 }
 </script>
-</body>
+<script>window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments);};</script>\n<script defer src="/_vercel/insights/script.js"></script>\n</body>
 </html>

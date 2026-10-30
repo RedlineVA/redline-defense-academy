@@ -52,11 +52,10 @@
     .cta-row{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:34px}
     .trust{display:flex;flex-wrap:wrap;gap:12px 26px;color:#bcc6d4;font-size:13px;font-weight:750}
     .trust span:before{content:"✓";color:#ff5a5e;font-weight:1000;margin-right:8px}
-    .hero-card{position:relative;min-height:540px;border:1px solid #27303d;border-radius:30px;overflow:hidden;background:
-      linear-gradient(180deg,rgba(0,0,0,.12),rgba(0,0,0,.86)),
-      url('https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=1400&q=85') center/cover;
-      box-shadow:var(--shadow)}
-    .hero-card:before{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(227,27,35,.16),transparent 45%)}
+    .hero-card{position:relative;min-height:540px;border:1px solid #27303d;border-radius:30px;overflow:hidden;background:#0e1218;box-shadow:var(--shadow)}
+    .hero-card>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .hero-card:before{content:"";position:absolute;z-index:1;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.08),rgba(0,0,0,.72)),linear-gradient(135deg,rgba(227,27,35,.18),transparent 45%)}
+    .hero-badge{z-index:2}
     .hero-badge{position:absolute;left:24px;right:24px;bottom:24px;padding:22px;border:1px solid rgba(255,255,255,.16);
       border-radius:20px;background:rgba(8,10,14,.82);backdrop-filter:blur(12px)}
     .hero-badge strong{display:block;font-size:20px}.hero-badge p{margin:5px 0 0;color:#b9c3d0;font-size:14px}
@@ -79,10 +78,10 @@
     .card li{padding:7px 0;border-top:1px solid rgba(255,255,255,.055);font-size:14px}
     .card li:before{content:"•";color:var(--red2);margin-right:8px}
     .split{display:grid;grid-template-columns:.9fr 1.1fr;gap:52px;align-items:center}
-    .photo{min-height:530px;border-radius:28px;border:1px solid var(--line);background:
-      linear-gradient(180deg,transparent 30%,rgba(0,0,0,.78)),
-      url('https://images.unsplash.com/photo-1612810436541-336b73fbcf9f?auto=format&fit=crop&w=1400&q=85') center/cover;
-      box-shadow:var(--shadow);position:relative}
+    .photo{min-height:530px;border-radius:28px;border:1px solid var(--line);background:#0e1218;box-shadow:var(--shadow);position:relative;overflow:hidden}
+    .photo>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .photo:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 35%,rgba(0,0,0,.8))}
+    .photo-note{z-index:2}
     .photo-note{position:absolute;left:22px;right:22px;bottom:22px;padding:20px;border-radius:18px;background:rgba(8,10,14,.82);border:1px solid rgba(255,255,255,.13)}
     .photo-note b{font-size:20px}.photo-note span{display:block;color:#b7c0ce;font-size:13px;margin-top:4px}
     .checklist{display:grid;gap:14px;margin:26px 0}
@@ -95,6 +94,12 @@
     .step:first-child{border-left-color:var(--red)}
     .step em{font-style:normal;color:#ff6a6f;font-size:12px;font-weight:900;letter-spacing:.12em}
     .step h4{margin:8px 0 6px;font-size:19px}.step p{color:var(--muted);font-size:14px;margin:0}
+    .media-grid{display:grid;grid-template-columns:1.25fr .75fr .75fr;grid-auto-rows:260px;gap:14px}
+    .media-item{position:relative;overflow:hidden;border:1px solid var(--line);border-radius:18px;background:#0d1118}
+    .media-item img,.media-item video{width:100%;height:100%;object-fit:cover;display:block}
+    .media-item.large{grid-row:span 2}
+    .media-item.video{grid-column:span 2}
+    .media-cap{position:absolute;left:12px;bottom:12px;padding:8px 11px;border-radius:999px;background:rgba(7,9,13,.78);backdrop-filter:blur(8px);font-size:12px;font-weight:800}
     .faq{display:grid;grid-template-columns:1fr 1fr;gap:14px}
     details{border:1px solid var(--line);border-radius:14px;padding:18px 20px;background:rgba(255,255,255,.02)}
     summary{font-weight:850;cursor:pointer}details p{color:var(--muted);margin:12px 0 0}
@@ -108,12 +113,12 @@
     @media(max-width:900px){
       .links a:not(.btn){display:none}.hero{padding-top:54px}.hero-grid,.split{grid-template-columns:1fr}.hero-card,.photo{min-height:420px}
       .stats-grid{grid-template-columns:repeat(2,1fr)}.stat:nth-child(2){border-right:0}.stat:nth-child(-n+2){border-bottom:1px solid var(--line)}
-      .cards{grid-template-columns:1fr}.steps{grid-template-columns:1fr 1fr}.faq{grid-template-columns:1fr}.cta{align-items:flex-start;flex-direction:column}
+      .cards{grid-template-columns:1fr}.steps{grid-template-columns:1fr 1fr}.media-grid{grid-template-columns:1fr 1fr;grid-auto-rows:220px}.media-item.large{grid-row:span 1}.media-item.video{grid-column:span 2}.faq{grid-template-columns:1fr}.cta{align-items:flex-start;flex-direction:column}
     }
     @media(max-width:560px){
       .wrap{width:min(calc(100% - 22px),var(--max))}.navin{height:66px}.brand span{font-size:12px}.hero-card{min-height:360px}
       .hero{padding-bottom:54px}section{padding:64px 0}.stats-grid,.steps{grid-template-columns:1fr}.stat{border-right:0!important;border-bottom:1px solid var(--line)}
-      .stat:last-child{border-bottom:0}.cta{padding:28px}.btn{width:100%}.links .btn{width:auto;padding:11px 14px}
+      .stat:last-child{border-bottom:0}.media-grid{grid-template-columns:1fr;grid-auto-rows:240px}.media-item.video{grid-column:auto}.cta{padding:28px}.btn{width:100%}.links .btn{width:auto;padding:11px 14px}
     }
   </style>
   <script type="application/ld+json">
@@ -162,7 +167,8 @@
             <span>18+ Years Experience</span>
           </div>
         </div>
-        <div class="hero-card" role="img" aria-label="Firearms training environment">
+        <div class="hero-card" aria-label="Redline Defense Academy class training">
+          <img data-b64-src="assets/hero_action_1.b64.txt" data-mime="image/jpeg" alt="Redline Defense Academy firearms class in progress" />
           <div class="hero-badge">
             <strong>Confidence comes from competence.</strong>
             <p>Small-group and private instruction focused on safe handling, sound decision-making, and repeatable fundamentals.</p>
@@ -227,7 +233,8 @@
 
     <section id="instructor" class="band">
       <div class="wrap split">
-        <div class="photo" role="img" aria-label="Professional firearms instructor">
+        <div class="photo" aria-label="Redline Defense Academy instructor">
+          <img data-b64-src="assets/hero_action_2.b64.txt" data-mime="image/jpeg" alt="Redline Defense Academy instructor working with students" />
           <div class="photo-note">
             <b>Experience beyond the classroom.</b>
             <span>Instruction informed by security leadership, personal protection, range safety, and real-world operational experience.</span>
@@ -262,6 +269,27 @@
           <div class="step"><em>02</em><h4>Build Fundamentals</h4><p>Grip, stance, trigger control, sight management, loading, unloading, and safe manipulation.</p></div>
           <div class="step"><em>03</em><h4>Apply the Skill</h4><p>Guided repetitions and live-fire work where the course requires it, with individual coaching.</p></div>
           <div class="step"><em>04</em><h4>Leave With a Plan</h4><p>Clear next steps for continued practice, permit processing, or additional skill development.</p></div>
+        </div>
+      </div>
+    </section>
+
+
+    <section id="class-media">
+      <div class="wrap">
+        <div class="section-head">
+          <div class="eyebrow">Inside the Academy</div>
+          <h2>Real students. Real range work. Real results.</h2>
+          <p>A look inside Redline Defense Academy training — from instructor-led range work to student performance and class-day results.</p>
+        </div>
+        <div class="media-grid">
+          <figure class="media-item large" style="margin:0"><img loading="lazy" data-b64-src="assets/hero_action_3.b64.txt" data-mime="image/jpeg" alt="Student training at Redline Defense Academy"><figcaption class="media-cap">Live-fire instruction</figcaption></figure>
+          <figure class="media-item" style="margin:0"><img loading="lazy" data-b64-src="assets/student_result_1.b64.txt" data-mime="image/jpeg" alt="Redline Defense Academy student result"><figcaption class="media-cap">Student results</figcaption></figure>
+          <figure class="media-item" style="margin:0"><img loading="lazy" data-b64-src="assets/student_result_2.b64.txt" data-mime="image/jpeg" alt="Redline Defense Academy student result"><figcaption class="media-cap">Skill development</figcaption></figure>
+          <figure class="media-item" style="margin:0"><img loading="lazy" data-b64-src="assets/student_result_3.b64.txt" data-mime="image/jpeg" alt="Redline Defense Academy student result"><figcaption class="media-cap">Range performance</figcaption></figure>
+          <figure class="media-item video" style="margin:0">
+            <video controls playsinline preload="metadata" data-b64-video="assets/class_highlight.mp4.b64.txt" data-poster-b64="assets/class_highlight_poster.b64.txt" aria-label="Redline Defense Academy class highlight video"></video>
+            <figcaption class="media-cap">Class highlight</figcaption>
+          </figure>
         </div>
       </div>
     </section>
@@ -310,6 +338,23 @@
       <p class="fine">© <span id="y"></span> Redline Defense Academy. All rights reserved.</p>
     </div>
   </footer>
-  <script>document.getElementById('y').textContent=new Date().getFullYear()</script>
+  <script>
+    document.getElementById('y').textContent=new Date().getFullYear();
+    async function loadB64(el,path,mime){
+      try{
+        const t=(await (await fetch(path)).text()).trim();
+        el.src='data:'+mime+';base64,'+t;
+      }catch(e){ el.style.display='none'; }
+    }
+    document.querySelectorAll('[data-b64-src]').forEach(el=>loadB64(el,el.dataset.b64Src,el.dataset.mime||'image/jpeg'));
+    document.querySelectorAll('[data-b64-video]').forEach(async el=>{
+      const videoPath=el.dataset.b64Video, posterPath=el.dataset.posterB64;
+      try{
+        if(posterPath){const p=(await (await fetch(posterPath)).text()).trim();el.poster='data:image/jpeg;base64,'+p}
+        const v=(await (await fetch(videoPath)).text()).trim();
+        el.src='data:video/mp4;base64,'+v;
+      }catch(e){el.style.display='none'}
+    });
+  </script>
 </body>
 </html>

@@ -61,10 +61,18 @@ async function handle(req,res){
   const eId=id(b.id),status=str(b.status,30);if(!eId||!statuses.includes(status))return json(res,400,{error:'Invalid status.'});
   const event=await get('request',eId);const p=event.extendedProperties?.private||{};
   if(['confirmed','attended'].includes(status)&&!p.deposit_confirmed_at)return json(res,409,{error:'Confirm the deposit first, so the seat and email are handled correctly.'});
+  if(status==='attended'&&!['confirmed','attended'].includes(p.status))
+   return json(res,409,{error:'Confirm this seat before marking attendance.'});
   if(status==='confirmed'&&!['confirmed','attended'].includes(p.status)){
    const classes=await list('class'),c=classes.find(x=>x.id===p.class_id);
    if(!c)return json(res,400,{error:'The class no longer exists.'});
-   if(c.capacity!==null){const students=await list('request');const filled=totalSeats(students,c.id);if(filled+sizeOf({...p})>c.capacity)return json(res,409,{error:'This class is full.'})}
+   const students=await list('request'),qty=sizeOf(p);
+   if(c.capacity!==null&&totalSeats(students,c.id)+qty>c.capacity)return json(res,409,{error:'This class is full.'});
+   if(p.offer_id&&p.offer_id!=='regular'){
+    const offer=options(c,students).find(o=>o.id===p.offer_id);
+    if(!offer||offer.sold_out||offer.seats_remaining<qty)
+     return json(res,409,{error:'This special pricing tier is sold out.'});
+   }
   }
   await update('request',eId,{status});return json(res,200,{ok:true});
  }
@@ -76,7 +84,8 @@ async function handle(req,res){
   const cls=(await list('class')).find(c=>c.id===p.class_id);
   if(!cls)return json(res,404,{error:'Class not found.'});
   const paid=Number(p.deposit_recorded_cents||0)+(await list('payment')).filter(x=>x.enrollment_id===enrollmentId).reduce((n,x)=>n+x.amount_cents,0);
-  const m=emailService.compose({id:enrollmentId,full_name:p.full_name,email:p.email},cls,paid);
+  const m=emailService.compose({id:enrollmentId,full_name:p.full_name,email:p.email,party_size:Number(p.party_size)||1,
+   friend_name:p.friend_name,offer_label:p.offer_label,price_total_cents:p.price_total_cents==null||p.price_total_cents===''?null:Number(p.price_total_cents)},cls,paid);
   return json(res,200,{subject:m.subject,text:m.text,recipient:p.email,alreadySent:!!p.confirmation_sent_at});
  }
  if(b.action==='confirm_deposit'){
@@ -124,7 +133,10 @@ async function handle(req,res){
   const cls=(await list('class')).find(x=>x.id===p.class_id);
   if(!cls)return json(res,404,{error:'Class not found.'});
   const paid=Number(p.deposit_recorded_cents||0)+(await list('payment')).filter(x=>x.enrollment_id===enrollmentId).reduce((n,x)=>n+x.amount_cents,0);
-  const sent=await sendConfirmation(enrollmentId,{id:enrollmentId,full_name:p.full_name,email:p.email,deposit_recorded_cents:Number(p.deposit_recorded_cents||0)},cls,paid);
+  const sent=await sendConfirmation(enrollmentId,{id:enrollmentId,full_name:p.full_name,email:p.email,
+   offer_label:p.offer_label,party_size:Number(p.party_size)||1,friend_name:p.friend_name,
+   price_total_cents:p.price_total_cents==null||p.price_total_cents===''?null:Number(p.price_total_cents),
+   deposit_recorded_cents:Number(p.deposit_recorded_cents||0)},cls,paid);
   return json(res,200,{ok:sent.ok,emailSent:sent.ok,emailStatus:sent.state,message:sent.message});
  }
  if(b.action==='payment'){

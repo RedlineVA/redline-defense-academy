@@ -6,13 +6,14 @@ const dateTime=v=>v?new Date(v).toLocaleString('en-US',{timeZone:'America/New_Yo
 const state={access:'',classes:[],enrollments:[],payments:[],admin:''};
 const statusLabels={requested:'Requested',contacted:'Contacted',deposit_pending:'Deposit Pending',confirmed:'Confirmed',cancelled:'Cancelled',attended:'Attended'};
 const activeStatuses=['confirmed','attended'];
+let calendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
 function message(s,bad=false){const el=$('notice');el.textContent=s;el.className='notice'+(bad?' error':'');setTimeout(()=>el.classList.add('hidden'),5500)}
 async function api(method='GET',body){const r=await fetch('/api/admin-enrollment',{method,credentials:'same-origin',headers:{'Content-Type':'application/json'},body:method==='GET'?undefined:JSON.stringify(body||{})});const d=await r.json().catch(()=>({error:'Unexpected server response'}));if(!r.ok){const e=Error(d.error||'Request failed');e.status=r.status;throw e}return d}
 async function authApi(action,extra={}){const r=await fetch('/api/admin-auth',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...extra})});const d=await r.json().catch(()=>({error:'Unexpected login response'}));if(!r.ok){const e=Error(d.error||'Login failed');e.status=r.status;throw e}return d}
 function hideModal(){$('modalRoot').innerHTML=''}
 function modal(title,body){$('modalRoot').innerHTML='<div class="modal" role="dialog" aria-modal="true"><div class="modal-card"><div class="modal-head"><h2>'+esc(title)+'</h2><button class="close" id="closeModal" type="button">×</button></div>'+body+'</div></div>';$('closeModal').onclick=hideModal}
 function loggedOut(){state.access='';$('app').classList.add('hidden');$('login').classList.remove('hidden');$('loginPassword').value=''}
-function showPage(p){if(!['dashboard','requests','classes','students','deposits'].includes(p))return;document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+p));document.querySelectorAll('[data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===p));$('pageTitle').textContent=p==='requests'?'Seat Requests':p==='classes'?'Classes & Rosters':p==='deposits'?'Deposits & Balances':p[0].toUpperCase()+p.slice(1);$('sidebar').classList.remove('open');history.replaceState(null,'','#'+p)}
+function showPage(p){if(!['dashboard','calendar','requests','classes','students','deposits','settings'].includes(p))return;document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+p));document.querySelectorAll('[data-page]').forEach(x=>x.classList.toggle('active',x.dataset.page===p));$('pageTitle').textContent=p==='requests'?'Seat Requests':p==='classes'?'Classes & Rosters':p==='deposits'?'Deposits & Balances':p[0].toUpperCase()+p.slice(1);$('sidebar').classList.remove('open');history.replaceState(null,'','#'+p)}
 function cls(id){return state.classes.find(c=>c.id===id)}
 function seats(id){return state.enrollments.filter(e=>e.class_id===id&&activeStatuses.includes(e.status)).length}
 function payments(eid){return state.payments.filter(p=>p.enrollment_id===eid).reduce((a,p)=>a+Number(p.amount_cents||0),0)}
@@ -32,7 +33,30 @@ function renderRequests(){const q=$('requestSearch').value.toLowerCase(),s=$('re
 function renderClasses(){$('classRows').innerHTML=state.classes.map(c=>'<tr><td><b>'+esc(c.title)+'</b><div class="muted">'+(c.active?'Active':'Archived')+'</div></td><td>'+dateTime(c.starts_at)+'<div class="muted">'+esc(c.location||'TBA')+'</div></td><td>'+money(c.price_cents)+'<div class="muted">Deposit '+money(c.deposit_cents)+'</div></td><td>'+seats(c.id)+' / '+(c.capacity??'No limit')+'</td><td>'+(c.visible?'Published':'Hidden')+'</td><td><button class="btn small" data-class="'+c.id+'">Edit / Roster</button></td></tr>').join('')||empty(6)}
 function renderStudents(){const q=$('studentSearch').value.toLowerCase();$('studentRows').innerHTML=state.enrollments.filter(e=>!q||[e.full_name,e.email,e.phone,cls(e.class_id)?.title].join(' ').toLowerCase().includes(q)).map(e=>'<tr><td><b>'+esc(e.full_name)+'</b></td><td>'+esc(e.phone)+'<div class="muted">'+esc(e.email)+'</div></td><td>'+esc(cls(e.class_id)?.title||'—')+'</td><td>'+pill(e.status)+'</td><td>'+esc(paymentSummary(e))+'</td><td><button class="btn small" data-request="'+e.id+'">Details</button></td></tr>').join('')||empty(6)}
 function renderDeposits(){const total=state.payments.reduce((s,p)=>s+Number(p.amount_cents||0),0),deposit=state.payments.filter(p=>p.kind==='deposit').reduce((s,p)=>s+Number(p.amount_cents||0),0),due=state.enrollments.filter(e=>e.status!=='cancelled').reduce((s,e)=>s+balance(e),0);$('financeStats').innerHTML=[['Total Recorded',money(total),'green'],['Deposits Recorded',money(deposit),'blue'],['Outstanding Balances',money(due),'amber']].map(x=>'<div class="stat '+x[2]+'"><small>'+x[0]+'</small><b>'+x[1]+'</b></div>').join('');$('paymentRows').innerHTML=state.payments.map(p=>{const e=state.enrollments.find(x=>x.id===p.enrollment_id);return '<tr><td>'+dateTime(p.created_at)+'</td><td>'+esc(e?.full_name||'Unknown')+'</td><td>'+esc(p.kind)+'</td><td>'+esc(p.method)+'</td><td class="'+(p.amount_cents<0?'expense':'income')+'">'+money(p.amount_cents)+'</td><td>'+esc(p.reference||'—')+'</td></tr>'}).join('')||empty(6)}
-function render(){renderDashboard();renderRequests();renderClasses();renderStudents();renderDeposits()}
+
+function easternDateKey(value){
+ const parts=new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(value));
+ const pick=name=>parts.find(p=>p.type===name)?.value||'';
+ return pick('year')+'-'+pick('month')+'-'+pick('day');
+}
+function renderCalendar(){
+ const year=calendarMonth.getFullYear(),month=calendarMonth.getMonth();
+ $('monthLabel').textContent=calendarMonth.toLocaleDateString('en-US',{month:'long',year:'numeric'});
+ const first=new Date(year,month,1),last=new Date(year,month+1,0),offset=first.getDay();
+ const byDay=new Map();
+ for(const c of state.classes){const day=easternDateKey(c.starts_at);if(!byDay.has(day))byDay.set(day,[]);byDay.get(day).push(c)}
+ const total=Math.ceil((offset+last.getDate())/7)*7;
+ let html='';
+ for(let cell=0;cell<total;cell++){
+  const day=cell-offset+1,inside=day>0&&day<=last.getDate();
+  const key=inside?year+'-'+String(month+1).padStart(2,'0')+'-'+String(day).padStart(2,'0'):'';
+  const events=byDay.get(key)||[];
+  html+='<div class="rda-date '+(inside?'':'other-month')+'"><div class="rda-day">'+(inside?day:'')+'</div>'+
+   events.map(c=>'<button class="rda-calendar-event" data-class="'+esc(c.id)+'" type="button"><b>'+esc(c.title)+'</b><small>'+seats(c.id)+(c.capacity?'/'+c.capacity:'')+' booked · '+(c.active?'Active':'Archived')+'</small></button>').join('')+'</div>';
+ }
+ $('monthGrid').innerHTML=html;
+}
+function render(){renderDashboard();renderCalendar();renderRequests();renderClasses();renderStudents();renderDeposits()}
 async function reload(){try{$('sync').textContent='Refreshing…';const data=await api();state.classes=data.classes||[];state.enrollments=data.enrollments||[];state.payments=data.payments||[];state.admin=data.admin||'Admin';state.notificationsConfigured=!!data.notificationsConfigured;$('who').textContent=state.admin;render();$('sync').textContent='Updated '+new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}catch(e){$('sync').textContent='Update failed';if(e.status===401)loggedOut();message(e.message,true);throw e}}
 async function run(body){try{await api('POST',body);hideModal();await reload();message('Saved.')}catch(e){message(e.message,true)}}
 function showRequest(id){const e=state.enrollments.find(x=>x.id===id);if(!e)return;const c=cls(e.class_id);const options=Object.entries(statusLabels).map(x=>'<option value="'+x[0]+'" '+(e.status===x[0]?'selected':'')+'>'+esc(x[1])+'</option>').join('');
@@ -64,6 +88,7 @@ $('menuButton').onclick=()=>$('sidebar').classList.toggle('open');
 document.querySelectorAll('[data-page]').forEach(x=>x.onclick=()=>showPage(x.dataset.page));
 document.querySelectorAll('[data-page-jump]').forEach(x=>x.onclick=()=>showPage(x.dataset.pageJump));
 $('requestSearch').oninput=renderRequests;$('requestStatus').onchange=renderRequests;$('studentSearch').oninput=renderStudents;
-$('addClass').onclick=()=>showClass();$('addPayment').onclick=()=>showPayment();
+$('addClass').onclick=()=>showClass();$('calendarNewClass').onclick=()=>showClass();$('addPayment').onclick=()=>showPayment();
+$('prevMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()-1,1);renderCalendar()};$('nextMonth').onclick=()=>{calendarMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,1);renderCalendar()};
 document.addEventListener('click',event=>{const el=event.target.closest('[data-request],[data-class]');if(!el)return;if(el.dataset.request)showRequest(el.dataset.request);else if(el.dataset.class)showClass(el.dataset.class)});
 document.addEventListener('keydown',event=>{if(event.key==='Escape')hideModal()});

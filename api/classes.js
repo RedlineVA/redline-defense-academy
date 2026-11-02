@@ -8,7 +8,7 @@ module.exports=async(req,res)=>{
   return res.status(200).json({classes:classes.map(c=>({
    id:c.id,title:c.title,starts_at:c.starts_at,location:c.location,
    capacity:c.capacity,price_cents:c.price_cents,deposit_cents:c.deposit_cents,
-   confirmed_seats:c.confirmed_seats,seats_remaining:c.seats_remaining,sold_out:c.sold_out
+   confirmed_seats:c.confirmed_seats,seats_remaining:c.seats_remaining,sold_out:c.sold_out,offers:c.offers
   }))});
  }catch(e){
   console.error('Public class schedule unavailable:',e?.message||e);

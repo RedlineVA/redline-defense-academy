@@ -2,6 +2,7 @@
 const {str,id,int,iso,list,get,create,update}=require('../lib/rda-calendar');
 const {isAdmin,json,enforceSameOrigin}=require('../lib/rda-auth');
 const emailService=require('../lib/rda-confirmation-email');
+const {normalizeOffers,parseOffers,options,snapshot,sizeOf,totalSeats,remaining}=require('../lib/rda-pricing');
 const statuses=['requested','contacted','deposit_pending','confirmed','cancelled','attended'];
 
 async function sendConfirmation(enrollmentId,student,cls,totalPaid){
@@ -35,7 +36,8 @@ async function handle(req,res){
  if(b.action==='create_class'){
   const title=str(b.title,160),date=iso(b.starts_at),price=int(b.price_cents),deposit=int(b.deposit_cents),capacity=b.capacity===''||b.capacity==null?null:Number(b.capacity);
   if(title.length<4||!date||price===null||deposit===null||deposit>price||(capacity!==null&&(!Number.isInteger(capacity)||capacity<1||capacity>1000)))return json(res,400,{error:'Check the class details, date, prices and capacity.'});
-  const row=await create('class',{title,starts_at:date,location:str(b.location,160),capacity:capacity??'',price_cents:price,deposit_cents:deposit,active:true,visible:b.visible===true});
+  const offers=normalizeOffers(b.offers||[]);
+  const row=await create('class',{title,starts_at:date,location:str(b.location,160),capacity:capacity??'',price_cents:price,deposit_cents:deposit,active:true,visible:b.visible===true,offers:JSON.stringify(offers)});
   return json(res,201,{class:row});
  }
  if(b.action==='edit_class'){
@@ -49,6 +51,10 @@ async function handle(req,res){
   if(b.price_cents!==undefined){const n=int(b.price_cents);if(n===null)return json(res,400,{error:'Invalid price.'});patch.price_cents=n}
   if(b.deposit_cents!==undefined){const n=int(b.deposit_cents);if(n===null)return json(res,400,{error:'Invalid deposit.'});patch.deposit_cents=n}
   if(Number(patch.deposit_cents??(current.extendedProperties?.private?.deposit_cents||0))>Number(patch.price_cents??(current.extendedProperties?.private?.price_cents||0)))return json(res,400,{error:'Deposit cannot exceed class price.'});
+  if(b.offers!==undefined){
+   const offers=normalizeOffers(b.offers);
+   patch.offers=JSON.stringify(offers);
+  }
   await update('class',eventId,patch);return json(res,200,{ok:true});
  }
  if(b.action==='status'){
@@ -58,7 +64,7 @@ async function handle(req,res){
   if(status==='confirmed'&&!['confirmed','attended'].includes(p.status)){
    const classes=await list('class'),c=classes.find(x=>x.id===p.class_id);
    if(!c)return json(res,400,{error:'The class no longer exists.'});
-   if(c.capacity){const students=await list('request');const filled=students.filter(x=>x.class_id===c.id&&['confirmed','attended'].includes(x.status)).length;if(filled>=c.capacity)return json(res,409,{error:'This class is full.'})}
+   if(c.capacity!==null){const students=await list('request');const filled=totalSeats(students,c.id);if(filled+sizeOf({...p})>c.capacity)return json(res,409,{error:'This class is full.'})}
   }
   await update('request',eId,{status});return json(res,200,{ok:true});
  }
@@ -81,14 +87,24 @@ async function handle(req,res){
   if(p.status==='cancelled')return json(res,409,{error:'Cannot confirm a cancelled request.'});
   const cls=(await list('class')).find(x=>x.id===p.class_id);
   if(!cls)return json(res,404,{error:'Class not found.'});
-  const currentSeats=(await list('request')).filter(x=>x.class_id===p.class_id&&['confirmed','attended'].includes(x.status)).length;
-  if(cls.capacity!==null&&currentSeats>=cls.capacity)return json(res,409,{error:'Class is full; deposit was not confirmed.'});
+  const current=(await list('request')),quote=snapshot({
+   offer_id:p.offer_id,offer_label:p.offer_label,party_size:Number(p.party_size),
+   price_total_cents:p.price_total_cents==null||p.price_total_cents===''?null:Number(p.price_total_cents),
+   deposit_due_cents:p.deposit_due_cents==null||p.deposit_due_cents===''?null:Number(p.deposit_due_cents)
+  },cls);
+  if(cls.capacity!==null&&totalSeats(current,cls.id)+quote.party_size>cls.capacity)
+   return json(res,409,{error:'Not enough seats remain for this reservation.'});
+  if(quote.offer_id!=='regular'){
+   const offer=options(cls,current).find(o=>o.id===quote.offer_id);
+   if(!offer||offer.sold_out||offer.seats_remaining<quote.party_size)
+    return json(res,409,{error:'This promotional price has sold out. Please contact the student before changing their offer.'});
+  }
   const prior=(await list('payment')).filter(x=>x.enrollment_id===enrollmentId);
   const depositAlreadyRecorded=prior.filter(x=>x.kind==='deposit').reduce((n,x)=>n+x.amount_cents,0);
-  if(depositAlreadyRecorded+newAmount<cls.deposit_cents)return json(res,400,{error:'Deposit amount must reach the required class deposit.'});
-  if(depositAlreadyRecorded+newAmount>cls.price_cents)return json(res,400,{error:'Recorded deposit cannot exceed the class price.'});
+  if(depositAlreadyRecorded+newAmount<quote.deposit_due_cents)return json(res,400,{error:'Deposit amount must reach the required class deposit.'});
+  if(depositAlreadyRecorded+newAmount>quote.price_total_cents)return json(res,400,{error:'Recorded deposit cannot exceed the class price.'});
   if(method==='already_recorded'&&newAmount!==0)return json(res,400,{error:'Use $0 when confirming a previously recorded deposit.'});
-  if(newAmount===0&&depositAlreadyRecorded===0&&cls.deposit_cents>0)return json(res,400,{error:'Enter the deposit that has actually been received.'});
+  if(newAmount===0&&depositAlreadyRecorded===0&&quote.deposit_due_cents>0)return json(res,400,{error:'Enter the deposit that has actually been received.'});
   // Money is tracked on the request event atomically with status, never as an additional ledger event.
   // An older manually recorded payment remains in the separate ledger and is counted only once.
   const result=await update('request',enrollmentId,{

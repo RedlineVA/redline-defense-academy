@@ -47,3 +47,15 @@
  .schedule-class-title{font-size:1.1rem}.schedule-class-info,.schedule-class-location,.schedule-class-cost{font-size:.82rem!important}
  .schedule-availability{text-align:left}
 }
+
+.rda-public-offers{display:grid;gap:8px;margin:12px 0}
+.rda-public-offer{display:flex;gap:9px;justify-content:space-between;align-items:center;background:#121b28;border:1px solid #3a5266;padding:10px;border-radius:8px}
+.rda-public-offer-text{display:grid;gap:4px;min-width:0}
+.rda-public-offer-text strong{color:#f0f4fa;font-size:.83rem}
+.rda-public-offer-text small{color:#bcc8d4;font-size:.74rem;line-height:1.45}
+.rda-public-offer .btn{font-size:.7rem;padding:9px 12px;white-space:nowrap;flex-shrink:0}
+.rda-offer-sold{opacity:.65}
+.rda-sold-out-note{font-size:.8rem;font-weight:900;color:#f2b9be}
+.rda-offer-total{padding:13px;background:#182a36;color:#f1d39c;border-radius:8px;border:1px solid #4c6473;font-size:.84rem;line-height:1.55}
+.rda-friend-wrap{display:grid;gap:6px}.rda-friend-wrap.hidden{display:none!important}
+@media(max-width:730px){.rda-public-offer{align-items:flex-start;flex-direction:column}.rda-public-offer .btn{align-self:flex-start}}

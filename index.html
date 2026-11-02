@@ -370,7 +370,15 @@
   <div class="reserve-card">
   <form id="reserveForm" class="hidden">
    <label>Choose a Class<select id="reserveClass" required><option value="">Select a class</option></select></label>
-   <p id="reserveClassDetail" class="small-note"></p>
+   <label>Choose Your Price
+     <select id="reserveOffer" required><option value="">Select a class first</option></select>
+    </label>
+    <div id="reserveOfferDetail" class="rda-offer-total" aria-live="polite"></div>
+    <div id="reserveFriendWrap" class="rda-friend-wrap hidden">
+     <label>Friend's Full Name<input id="reserveFriendName" maxlength="120" autocomplete="off" placeholder="Second attendee's name"></label>
+     <p class="small-note">Bring a Friend reserves 2 seats together; the confirmation goes to the primary contact.</p>
+    </div>
+    <p id="reserveClassDetail" class="small-note"></p>
    <label>Full Name<input id="reserveName" autocomplete="name" maxlength="120" required></label>
    <label>Email<input id="reserveEmail" type="email" autocomplete="email" maxlength="254" required></label>
    <label>Phone<input id="reservePhone" type="tel" autocomplete="tel" maxlength="30" required></label>
@@ -434,5 +442,5 @@
       }catch(e){el.style.display='none'}
     });
   </script>
-<script src="/assets/seat-reserve.js?v=3"></script></body>
+<script src="/assets/seat-reserve.js?v=4"></script></body>
 </html>

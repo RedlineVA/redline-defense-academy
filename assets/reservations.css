@@ -11,3 +11,39 @@
 .reserve-card .hidden{display:none!important}.reserve-card .small-note{font-size:.78rem;color:#a8b6c7;margin:0}
 .reserve-fallback{margin:16px 0}.reserve-fallback.hidden{display:none}
 @media(max-width:740px){.reserve-layout{grid-template-columns:1fr}.reserve-section{padding:42px 0}.reserve-card{padding:18px}}
+
+/* Live upcoming classes — linked to the Command Center */
+.schedule-section{padding:68px 0 72px;background:linear-gradient(135deg,#111822 0%,#07090d 72%);border-top:1px solid #25313e;border-bottom:1px solid #29313b}
+.schedule-heading{display:flex;align-items:end;justify-content:space-between;gap:24px;margin-bottom:24px}
+.schedule-heading h2{font-size:clamp(2rem,4vw,3.25rem);line-height:1.08;margin:12px 0}
+.schedule-heading p{max-width:610px;color:#bdc8d3;margin:0;line-height:1.6}
+.next-class-card{border:1px solid #8b2530;border-radius:15px;background:linear-gradient(110deg,#241518,#121822);box-shadow:0 20px 52px #0006;overflow:hidden;min-height:140px}
+.next-class-inner{padding:25px 28px;display:grid;grid-template-columns:90px minmax(0,1fr) auto;gap:22px;align-items:center}
+.next-tag{display:inline-block;color:#ff666c;font-size:.71rem;font-weight:900;letter-spacing:.18em;margin-bottom:8px}
+.date-badge{width:76px;min-height:82px;padding:10px 6px;border-radius:10px;border:1px solid #9f3037;background:#170c12;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px}
+.date-badge .month{color:#e7777c;font-size:.79rem;text-transform:uppercase;font-weight:900;letter-spacing:.1em}
+.date-badge .day{font-size:2.15rem;line-height:1;color:#fff}
+.schedule-class-title{font-size:clamp(1.16rem,2vw,1.55rem);line-height:1.3;margin:0 0 8px;color:#fff}
+.schedule-class-info,.schedule-class-location,.schedule-class-cost{font-size:.94rem;line-height:1.5;color:#c1cad5;margin:3px 0!important}
+.schedule-class-cost{color:#fff;font-weight:750}
+.schedule-class-actions{display:flex;flex-direction:column;align-items:flex-end;gap:10px;min-width:160px}
+.schedule-availability{color:#a8e6c2;font-size:.77rem;font-weight:800;letter-spacing:.02em;text-align:right}
+.schedule-full{padding:9px 11px;border:1px solid #76515a;color:#f9b1b9;background:#321d23;border-radius:8px;font-size:.8rem;font-weight:800}
+.schedule-class-actions .btn{white-space:nowrap}
+.schedule-subheading{display:flex;justify-content:space-between;align-items:center;margin:32px 0 13px;gap:15px}
+.schedule-subheading h3{font-size:1.18rem;margin:0}.schedule-subheading span{font-size:.79rem;color:#aab6c4}
+.schedule-list{display:grid;gap:10px}
+.schedule-entry{display:grid;grid-template-columns:78px minmax(0,1fr) auto;align-items:center;gap:18px;background:#111720;border:1px solid #303c48;border-radius:10px;padding:16px 20px}
+.schedule-entry .date-badge{width:65px;min-height:65px}.schedule-entry .date-badge .day{font-size:1.55rem}
+.schedule-entry .schedule-class-title{font-size:1.12rem;margin-bottom:4px}
+.schedule-entry .schedule-class-info,.schedule-entry .schedule-class-location,.schedule-entry .schedule-class-cost{font-size:.82rem}
+.schedule-message{margin:16px 0 0;color:#899baa;font-size:.78rem}
+.schedule-loading,.schedule-empty{padding:27px;color:#d5dce6;margin:0}
+@media(max-width:730px){
+ .schedule-section{padding:40px 0 48px}.schedule-heading{display:block}.schedule-heading .btn{margin-top:16px}
+ .next-class-inner,.schedule-entry{grid-template-columns:68px minmax(0,1fr);gap:13px;padding:16px}
+ .schedule-class-actions{grid-column:1/-1;flex-direction:row;align-items:center;justify-content:space-between;min-width:0}
+ .schedule-entry .date-badge,.next-class-inner .date-badge{width:62px;min-height:66px}
+ .schedule-class-title{font-size:1.1rem}.schedule-class-info,.schedule-class-location,.schedule-class-cost{font-size:.82rem!important}
+ .schedule-availability{text-align:left}
+}

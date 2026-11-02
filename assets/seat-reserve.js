@@ -13,7 +13,7 @@
   const x=document.createElement(tag);if(klass)x.className=klass;if(text!=null)x.textContent=String(text);return x;
  }
  const optionText=o=>o.label+' · '+money(o.price_cents)+(o.group_size===2?' total for 2':' per person')+' · Deposit '+money(o.deposit_cents);
- function offers(c){return Array.isArray(c.offers)?c.offers:[]}
+ function offers(c){return Array.isArray(c?.offers)?c.offers:[]}
  function chosenClass(){return classes.find(c=>c.id===select.value)}
  function chooseOffer(c,selectedId=''){
   offer.replaceChildren(new Option('Select a price',''));

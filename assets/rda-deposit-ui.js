@@ -91,6 +91,26 @@
    btn.disabled=!state.emailConfigured;btn.onclick=()=>run({action:'send_confirmation',id});
    section.append(btn);
   }
+  if(e.deposit_confirmed_at){
+   const preview=document.createElement('button');
+   preview.type='button';preview.className='btn ghost';
+   preview.textContent='Preview Confirmation Email';
+   preview.onclick=async()=>{
+    try{
+     const response=await api('POST',{action:'preview_confirmation',id});
+     modal('Confirmation Email Preview','<p class="muted">Recipient: '+esc(response.recipient)+'</p>'+
+       '<label>Subject<input readonly id="previewSubject" value="'+esc(response.subject)+'"></label>'+
+       '<label>Email Text<textarea readonly id="previewEmail" rows="14" style="width:100%;min-height:240px">'+esc(response.text)+'</textarea></label>'+
+       '<p class="muted">'+(response.alreadySent?'This email is already marked as sent.':'This is a preview, not proof of delivery.')+'</p>'+
+       '<button class="btn" id="copyEmail">Copy Confirmation</button>');
+     $('copyEmail').onclick=async()=>{
+      const content=$('previewSubject').value+'\n\n'+$('previewEmail').value;
+      try{await navigator.clipboard.writeText(content);message('Confirmation copied.')}catch{message('Select and copy the text manually.',true)}
+     };
+    }catch(error){message(error.message,true)}
+   };
+   section.append(preview);
+  }
   form.prepend(section);
  };
  function showDeposit(id){

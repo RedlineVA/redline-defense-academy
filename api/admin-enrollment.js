@@ -62,6 +62,17 @@ async function handle(req,res){
   }
   await update('request',eId,{status});return json(res,200,{ok:true});
  }
+ if(b.action==='preview_confirmation'){
+  const enrollmentId=id(b.id);
+  if(!enrollmentId)return json(res,400,{error:'Invalid student request.'});
+  const event=await get('request',enrollmentId),p=event.extendedProperties?.private||{};
+  if(!p.deposit_confirmed_at)return json(res,409,{error:'Confirm deposit before generating the reservation email.'});
+  const cls=(await list('class')).find(c=>c.id===p.class_id);
+  if(!cls)return json(res,404,{error:'Class not found.'});
+  const paid=Number(p.deposit_recorded_cents||0)+(await list('payment')).filter(x=>x.enrollment_id===enrollmentId).reduce((n,x)=>n+x.amount_cents,0);
+  const m=emailService.compose({id:enrollmentId,full_name:p.full_name,email:p.email},cls,paid);
+  return json(res,200,{subject:m.subject,text:m.text,recipient:p.email,alreadySent:!!p.confirmation_sent_at});
+ }
  if(b.action==='confirm_deposit'){
   const enrollmentId=id(b.id),newAmount=int(b.amount_cents),method=str(b.method,30),reference=str(b.reference,120);
   if(!enrollmentId||newAmount===null||!['cash','zelle','card_external','bank','other','already_recorded'].includes(method))return json(res,400,{error:'Enter the deposit received and payment method.'});

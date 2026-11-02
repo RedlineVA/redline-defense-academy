@@ -17,7 +17,7 @@
  };
  function detail(c){return 'Course fee '+formatMoney(c.price_cents)+' · Deposit '+formatMoney(c.deposit_cents)+' · '+(c.location||'Location shared after confirmation')}
  function makeButton(c){
-  const btn=el('button','btn btn-primary','Request Seat');btn.type='button';
+  const btn=el('button','btn btn-primary','Reserve Seat');btn.type='button';
   btn.addEventListener('click',()=>{
    select.value=c.id;
    select.dispatchEvent(new Event('change'));
@@ -113,7 +113,7 @@
   }catch(error){
    status.textContent=error.message+' Please call or text 540-205-6500 if you need help.';
    status.className='reserve-status unavailable';
-  }finally{submit.disabled=false;submit.textContent='Request My Seat'}
+  }finally{submit.disabled=false;submit.textContent='Reserve Seat'}
  });
  window.addEventListener('pageshow',event=>{if(event.persisted)load()});
  load();

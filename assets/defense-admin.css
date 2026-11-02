@@ -18,3 +18,5 @@
 .rda-calendar-event b,.rda-calendar-event small{display:block;overflow:hidden;text-overflow:ellipsis}.rda-calendar-event small{color:#ccc;margin-top:3px}
 .rda-calendar-event:hover{border-color:#e10600}
 @media(max-width:700px){.rda-date{min-height:67px;padding:4px}.rda-calendar-event{padding:3px;font-size:.63rem}.rda-day{font-size:.72rem}.rda-calendar-event small{display:none}}
+
+.rda-confirm-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.rda-confirm-tag{font-size:.77rem;color:#9ccbb2;font-weight:800}.rda-email-status{font-size:.78rem;color:#a0b1be}.rda-deposit-detail{padding:14px;border:1px solid #334455;border-radius:8px;margin:12px 0}.rda-modal-note{font-size:.87rem;line-height:1.55;color:#9aa8b9}

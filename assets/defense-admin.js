@@ -7,7 +7,8 @@ const state={access:'',classes:[],enrollments:[],payments:[],admin:''};
 const statusLabels={requested:'Requested',contacted:'Contacted',deposit_pending:'Deposit Pending',confirmed:'Confirmed',cancelled:'Cancelled',attended:'Attended'};
 const activeStatuses=['confirmed','attended'];
 function message(s,bad=false){const el=$('notice');el.textContent=s;el.className='notice'+(bad?' error':'');setTimeout(()=>el.classList.add('hidden'),5500)}
-async function api(method='GET',body,authorized=true){const headers={'Content-Type':'application/json'};if(authorized&&state.access)headers.Authorization='Bearer '+state.access;const r=await fetch('/api/admin-enrollment',{method,headers,body:method==='GET'?undefined:JSON.stringify(body||{})});const d=await r.json().catch(()=>({error:'Invalid response'}));if(!r.ok){const e=Error(d.error||'Request failed');e.status=r.status;throw e}return d}
+async function api(method='GET',body){const r=await fetch('/api/admin-enrollment',{method,credentials:'same-origin',headers:{'Content-Type':'application/json'},body:method==='GET'?undefined:JSON.stringify(body||{})});const d=await r.json().catch(()=>({error:'Unexpected server response'}));if(!r.ok){const e=Error(d.error||'Request failed');e.status=r.status;throw e}return d}
+async function authApi(action,extra={}){const r=await fetch('/api/admin-auth',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,...extra})});const d=await r.json().catch(()=>({error:'Unexpected login response'}));if(!r.ok){const e=Error(d.error||'Login failed');e.status=r.status;throw e}return d}
 function hideModal(){$('modalRoot').innerHTML=''}
 function modal(title,body){$('modalRoot').innerHTML='<div class="modal" role="dialog" aria-modal="true"><div class="modal-card"><div class="modal-head"><h2>'+esc(title)+'</h2><button class="close" id="closeModal" type="button">×</button></div>'+body+'</div></div>';$('closeModal').onclick=hideModal}
 function loggedOut(){state.access='';$('app').classList.add('hidden');$('login').classList.remove('hidden');$('loginPassword').value=''}
@@ -47,7 +48,7 @@ function showClass(id){
  form+='<div class="wide toolbar"><button class="btn good">Save Class</button></div></form>';
  if(edit)form+='<h3 class="roster-title">Roster · '+seats(c.id)+' confirmed</h3><div class="roster-list">'+(state.enrollments.filter(e=>e.class_id===c.id).map(e=>'<div class="list-item"><div><b>'+esc(e.full_name)+'</b><div class="muted">'+esc(statusLabels[e.status])+'</div></div><button class="btn small" data-request="'+e.id+'">Open</button></div>').join('')||'<div class="muted">No requests yet.</div>')+'</div>';
  modal(edit?'Edit Class & Roster':'Create Class',form);
- $('classForm').onsubmit=ev=>{ev.preventDefault();const b={action:edit?'edit_class':'create_class',title:$('classTitle').value,location:$('classLocation').value,capacity:$('classCapacity').value,price_cents:Math.round(Number($('classPrice').value)*100),deposit_cents:Math.round(Number($('classDeposit').value)*100),visible:$('classVisible').checked};if(edit){b.id=id;b.active=$('classActive').checked}else b.starts_at=$('classStart').value;run(b)};
+ $('classForm').onsubmit=ev=>{ev.preventDefault();const b={action:edit?'edit_class':'create_class',title:$('classTitle').value,location:$('classLocation').value,capacity:$('classCapacity').value,price_cents:Math.round(Number($('classPrice').value)*100),deposit_cents:Math.round(Number($('classDeposit').value)*100),visible:$('classVisible').checked};if(edit){b.id=id;b.active=$('classActive').checked}else b.starts_at=new Date($('classStart').value).toISOString();run(b)};
 }
 function showPayment(id){
  if(!state.enrollments.length){message('No student requests to record a payment for.',true);return}
@@ -56,41 +57,8 @@ function showPayment(id){
  modal('Record Payment',html);$('paymentForm').onsubmit=ev=>{ev.preventDefault();let amount=Math.round(Number($('paymentAmount').value)*100);if($('paymentKind').value==='refund')amount=-amount;if(!Number.isSafeInteger(amount)||!amount)return message('Invalid payment amount.',true);run({action:'payment',id:$('paymentStudent').value,kind:$('paymentKind').value,method:$('paymentMethod').value,amount_cents:amount,reference:$('paymentReference').value,note:$('paymentNote').value})};
 }
 
-$('resendConfirmation').onclick=async ()=>{
- const button=$('resendConfirmation');
- button.disabled=true;
- $('loginError').classList.add('hidden');
- try{
-  const response=await api('POST',{action:'resend_confirmation',email:'redlinedefenseacademy@gmail.com'},false);
-  $('loginError').textContent=response.message;
-  $('loginError').classList.remove('hidden');
- }catch(error){
-  $('loginError').textContent=error.message;
-  $('loginError').classList.remove('hidden');
- }finally{button.disabled=false}
-};
-$('setupAccount').onclick=()=>{
- modal('Activate Your Redline Defense Admin Login',`<form id="activationForm" class="form-grid">
-  <p class="wide muted">This creates your private administrator account. Use a NEW password, not one shared in chat. You'll be asked to verify the email address.</p>
-  <label class="wide">Admin Email<input id="activationEmail" type="email" readonly value="redlinedefenseacademy@gmail.com"></label>
-  <label class="wide">New Password<input id="activationPassword" type="password" autocomplete="new-password" minlength="12" required></label>
-  <label class="wide">Confirm Password<input id="activationConfirm" type="password" autocomplete="new-password" minlength="12" required></label>
-  <div class="wide toolbar"><button class="btn good">Send Verification Email</button></div>
- </form>`);
- $('activationForm').onsubmit=async ev=>{
-  ev.preventDefault();
-  const pw=$('activationPassword').value;
-  if(pw!==$('activationConfirm').value)return message('Passwords do not match.',true);
-  try{
-   const result=await api('POST',{action:'register',email:$('activationEmail').value,password:pw},false);
-   hideModal();
-   $('loginError').textContent=result.message||'Check your email for a verification link.';
-   $('loginError').classList.remove('hidden');
-  }catch(error){message(error.message,true)}
- };
-};
-$('loginForm').onsubmit=async e=>{e.preventDefault();const button=e.submitter;button.disabled=true;$('loginError').classList.add('hidden');try{const d=await api('POST',{action:'login',email:$('loginEmail').value,password:$('loginPassword').value},false);state.access=d.access_token;await reload();$('login').classList.add('hidden');$('app').classList.remove('hidden');showPage(location.hash.slice(1)||'dashboard')}catch(err){$('loginError').textContent=err.message;$('loginError').classList.remove('hidden')}finally{button.disabled=false}};
-$('logoutButton').onclick=loggedOut;
+$('loginForm').onsubmit=async e=>{e.preventDefault();const button=e.submitter;button.disabled=true;$('loginError').classList.add('hidden');try{await authApi('login',{email:$('loginEmail').value,password:$('loginPassword').value});await reload();$('login').classList.add('hidden');$('app').classList.remove('hidden');showPage(location.hash.slice(1)||'dashboard')}catch(err){$('loginError').textContent=err.message;$('loginError').classList.remove('hidden')}finally{button.disabled=false}};
+$('logoutButton').onclick=async()=>{try{await authApi('logout')}catch{}loggedOut()};
 $('refreshButton').onclick=()=>reload().catch(()=>{});
 $('menuButton').onclick=()=>$('sidebar').classList.toggle('open');
 document.querySelectorAll('[data-page]').forEach(x=>x.onclick=()=>showPage(x.dataset.page));

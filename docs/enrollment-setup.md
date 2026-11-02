@@ -1,23 +1,9 @@
-# Redline Defense Academy enrollment admin setup
+# Redline Defense Command Center
 
-The website includes a secure \`/admin/\` command-center interface and a customer request form. Both deliberately remain inactive until a dedicated database and admin user are connected. No payment card information is collected or stored.
+Follows Redline Auto's architecture: Google Calendar storage, Node/Vercel serverless APIs, and a signed HttpOnly cookie for staff access. No Supabase is used.
 
-1. Create a **new, separate** Supabase project for Redline Defense Academy in the organization you approve (do NOT reuse Strike Force 1 Protection's database).
-2. Apply \`db/rda-schema.sql\` as a Supabase migration.
-3. Disable open user signup in Supabase Auth. Create your admin user in Supabase Auth, verify its email, and insert their user id into \`rda_admins\` using the example in the schema. Use a unique long password and MFA if supported.
-4. Configure Redline Defense's Vercel project environment variables for production:
-   * \`RDA_SUPABASE_URL\` — your Supabase project URL
-   * \`RDA_SUPABASE_ANON_KEY\` — publishable or anon API key
-   * \`RDA_SUPABASE_SERVICE_KEY\` — secret service-role key (server only)
-   * \`RDA_RATE_SALT\` — secure random secret for request abuse throttling
-5. Optional secure owner email notifications:
-   * \`RESEND_API_KEY\` — your Resend API key
-   * \`RDA_FROM_EMAIL\` — an authorized sender at a verified domain
-   * \`RDA_NOTIFY_EMAIL\` — destination admin email address
-6. Redeploy Vercel so the new variables take effect. Use \`/admin/\` to create classes with dates, prices, deposits, capacities, and visible/active flags. Public form displays only available visible classes.
-7. Submit a test request; confirm the notification email if configured, status controls, and a test manual deposit entry. Keep production requests pending until manually approved.
+Environment variables: `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`, `GOOGLE_CALENDAR_ID` (the authorized Redline Google Calendar), `RDA_AUTH_SECRET`, `RDA_ADMIN_PASSWORD_HASH` (PBKDF2-SHA256: salt:hash), `RDA_ADMIN_EMAIL`.
 
-Deposit ledger is **manual record keeping**, not a checkout or payment gateway. Recording Zelle, cash, or external card payments does not actually charge customers. Refunds must be negative ledger entries. No automatic payment confirmations are sent to students. The system never treats a pending request as a reserved seat.
+Data isolation: Redline Defense records are held as private transparent all-day events on May 8, 2095 with `extendedProperties.private.rda_type` identifying `class`, `request`, or `payment`. The Auto CRM queries only current-year booking events and does not use these events. Existing Supabase records (if any) are not imported or deleted.
 
-## Deployment update (November 2026)
-The production backend uses Supabase's legacy anon key plus verified staff JWTs and row-level security. It does **not** use the service-role key. Required Vercel variables: `RDA_SUPABASE_URL`, `RDA_SUPABASE_ANON_KEY`, `RDA_RATE_SALT`, `RDA_ADMIN_EMAIL`. The database's `rda_owner_sync` trigger grants a verified account with the allowlisted Gmail address admin access. The owner activates from the admin page with a new password; Supabase email confirmation is required. Do not reuse a password provided in chat. The initial SQL in this repository was superseded by migration `rda_initial_private_enrollment` applied to the dedicated production Supabase project; update that schema artifact before future standalone imports.
+The public site lists active visible classes; requests are pending until staff confirm them. Deposit payments are ledger entries only, not automatic card charging or refunds. Auto email notifications are NOT yet configured. Admin login uses the email and password configured in the environment (no verification emails).

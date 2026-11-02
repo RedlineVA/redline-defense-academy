@@ -55,6 +55,27 @@ function showPayment(id){
  const html='<form id="paymentForm" class="form-grid"><p class="wide muted">Record an outside payment you have already received. This does not charge the student.</p><label class="wide">Student<select id="paymentStudent">'+options+'</select></label><label>Type<select id="paymentKind"><option value="deposit">Deposit</option><option value="balance">Balance Payment</option><option value="refund">Refund</option></select></label><label>Method<select id="paymentMethod"><option value="cash">Cash</option><option value="zelle">Zelle</option><option value="card_external">Card (external)</option><option value="bank">Bank Transfer</option><option value="other">Other</option></select></label><label>Amount ($)<input id="paymentAmount" type="number" min="0.01" step="0.01" required></label><label>Reference<input id="paymentReference" maxlength="120"></label><label class="wide">Internal Note<textarea id="paymentNote" maxlength="500"></textarea></label><div class="wide toolbar"><button class="btn good">Record Payment</button></div></form>';
  modal('Record Payment',html);$('paymentForm').onsubmit=ev=>{ev.preventDefault();let amount=Math.round(Number($('paymentAmount').value)*100);if($('paymentKind').value==='refund')amount=-amount;if(!Number.isSafeInteger(amount)||!amount)return message('Invalid payment amount.',true);run({action:'payment',id:$('paymentStudent').value,kind:$('paymentKind').value,method:$('paymentMethod').value,amount_cents:amount,reference:$('paymentReference').value,note:$('paymentNote').value})};
 }
+
+$('setupAccount').onclick=()=>{
+ modal('Activate Your Redline Defense Admin Login',`<form id="activationForm" class="form-grid">
+  <p class="wide muted">This creates your private administrator account. Use a NEW password, not one shared in chat. You'll be asked to verify the email address.</p>
+  <label class="wide">Admin Email<input id="activationEmail" type="email" readonly value="redlinedefenseacademy@gmail.com"></label>
+  <label class="wide">New Password<input id="activationPassword" type="password" autocomplete="new-password" minlength="12" required></label>
+  <label class="wide">Confirm Password<input id="activationConfirm" type="password" autocomplete="new-password" minlength="12" required></label>
+  <div class="wide toolbar"><button class="btn good">Send Verification Email</button></div>
+ </form>`);
+ $('activationForm').onsubmit=async ev=>{
+  ev.preventDefault();
+  const pw=$('activationPassword').value;
+  if(pw!==$('activationConfirm').value)return message('Passwords do not match.',true);
+  try{
+   const result=await api('POST',{action:'register',email:$('activationEmail').value,password:pw},false);
+   hideModal();
+   $('loginError').textContent=result.message||'Check your email for a verification link.';
+   $('loginError').classList.remove('hidden');
+  }catch(error){message(error.message,true)}
+ };
+};
 $('loginForm').onsubmit=async e=>{e.preventDefault();const button=e.submitter;button.disabled=true;$('loginError').classList.add('hidden');try{const d=await api('POST',{action:'login',email:$('loginEmail').value,password:$('loginPassword').value},false);state.access=d.access_token;await reload();$('login').classList.add('hidden');$('app').classList.remove('hidden');showPage(location.hash.slice(1)||'dashboard')}catch(err){$('loginError').textContent=err.message;$('loginError').classList.remove('hidden')}finally{button.disabled=false}};
 $('logoutButton').onclick=loggedOut;
 $('refreshButton').onclick=()=>reload().catch(()=>{});

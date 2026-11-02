@@ -116,11 +116,11 @@
  function showDeposit(id){
   const e=state.enrollments.find(x=>x.id===id);if(!e)return;
   if(e.deposit_confirmed_at)return message('Deposit is already confirmed.');
-  const c=cls(e.class_id),already=priorDeposit(id),needed=Math.max(0,Number(c?.deposit_cents||0)-already);
+  const c=cls(e.class_id),already=priorDeposit(id),needed=Math.max(0,Number(e.deposit_due_cents??c?.deposit_cents??0)-already);
   const other=already>0?'<option value="already_recorded">Previously Recorded</option>':'';
   const content='<form id="rdaDepositForm" class="form-grid">'+
    '<p class="wide rda-modal-note">Only confirm a deposit you have <b>already received</b>. The seat will be reserved immediately.</p>'+
-   '<div class="wide schedule-alert"><b>'+esc(e.full_name)+'</b><p>'+esc(c?.title||'Class')+'</p>Required deposit: '+money(c?.deposit_cents||0)+' · Previously recorded: '+money(already)+'</div>'+
+   '<div class="wide schedule-alert"><b>'+esc(e.full_name)+'</b><p>'+esc(c?.title||'Class')+'</p>Required deposit: '+money(e.deposit_due_cents??c?.deposit_cents??0)+' · Previously recorded: '+money(already)+'</div>'+
    '<label>New Deposit Amount ($)<input id="rdaDepositAmount" type="number" step="0.01" min="0" required value="'+(needed/100).toFixed(2)+'"></label>'+
    '<label>Payment Method<select id="rdaDepositMethod">'+
    '<option value="cash">Cash</option><option value="zelle">Zelle</option><option value="card_external">External card payment</option><option value="bank">Bank Transfer</option><option value="other">Other</option>'+other+'</select></label>'+

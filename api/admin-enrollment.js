@@ -16,6 +16,17 @@ async function run(req,res){
   if(!response.ok)return error(res,response.status===429?429:400,result.msg||result.error_description||'Unable to activate account. Check email settings.');
   return res.status(202).json({ok:true,message:'Check your Gmail inbox to verify your account, then return here and sign in.'});
  }
+ if(req.method==='POST'&&b.action==='resend_confirmation'){
+  const mail=email(b.email);
+  if(mail!==String(process.env.RDA_ADMIN_EMAIL||'').toLowerCase())return error(res,400,'Use your Redline Defense admin email address.');
+  const response=await fetch(process.env.RDA_SUPABASE_URL.replace(/\/$/,'')+'/auth/v1/resend',{
+   method:'POST',headers:{apikey:process.env.RDA_SUPABASE_ANON_KEY,'Content-Type':'application/json'},
+   body:JSON.stringify({type:'signup',email:mail})
+  });
+  if(response.status===429)return error(res,429,'Verification email limit reached. Please wait and try again.');
+  if(!response.ok)return error(res,400,'Unable to resend right now. Check your earlier confirmation email in Gmail.');
+  return res.status(202).json({ok:true,message:'A confirmation email has been requested. Check Gmail, including Spam and Promotions. Click the verification link, then return here to sign in.'});
+ }
  if(req.method==='POST'&&b.action==='login'){
   const mail=email(b.email),pass=String(b.password||'');
   if(!mail||!pass||pass.length>300)return error(res,400,'Enter a valid admin email and password.');

@@ -56,6 +56,19 @@ function showPayment(id){
  modal('Record Payment',html);$('paymentForm').onsubmit=ev=>{ev.preventDefault();let amount=Math.round(Number($('paymentAmount').value)*100);if($('paymentKind').value==='refund')amount=-amount;if(!Number.isSafeInteger(amount)||!amount)return message('Invalid payment amount.',true);run({action:'payment',id:$('paymentStudent').value,kind:$('paymentKind').value,method:$('paymentMethod').value,amount_cents:amount,reference:$('paymentReference').value,note:$('paymentNote').value})};
 }
 
+$('resendConfirmation').onclick=async ()=>{
+ const button=$('resendConfirmation');
+ button.disabled=true;
+ $('loginError').classList.add('hidden');
+ try{
+  const response=await api('POST',{action:'resend_confirmation',email:'redlinedefenseacademy@gmail.com'},false);
+  $('loginError').textContent=response.message;
+  $('loginError').classList.remove('hidden');
+ }catch(error){
+  $('loginError').textContent=error.message;
+  $('loginError').classList.remove('hidden');
+ }finally{button.disabled=false}
+};
 $('setupAccount').onclick=()=>{
  modal('Activate Your Redline Defense Admin Login',`<form id="activationForm" class="form-grid">
   <p class="wide muted">This creates your private administrator account. Use a NEW password, not one shared in chat. You'll be asked to verify the email address.</p>

@@ -1,91 +1,52 @@
 'use strict';
-const {ready,common,error,sameOrigin,clean,email,uuid,cents,query,auth,requireAdmin,bearer}=require('../lib/rda-backend');
-async function run(req,res){
- common(res);if(!sameOrigin(req))return error(res,403,'Invalid request origin.');
- if(!ready())return error(res,503,'Enrollment system setup is not complete. Connect its private database before using admin login.');
- const b=req.body||{};
- if(req.method==='POST'&&b.action==='register'){
-  const mail=email(b.email),password=String(b.password||'');
-  if(!mail||mail!==String(process.env.RDA_ADMIN_EMAIL||'').toLowerCase())return error(res,403,'Only the academy owner email can activate this account.');
-  if(password.length<12||password.length>200)return error(res,400,'Choose a fresh password of at least 12 characters.');
-  const response=await fetch(process.env.RDA_SUPABASE_URL.replace(/\/$/,'')+'/auth/v1/signup',{
-   method:'POST',headers:{apikey:process.env.RDA_SUPABASE_ANON_KEY,'Content-Type':'application/json'},
-   body:JSON.stringify({email:mail,password})
-  });
-  const result=await response.json().catch(()=>({}));
-  if(!response.ok)return error(res,response.status===429?429:400,result.msg||result.error_description||'Unable to activate account. Check email settings.');
-  return res.status(202).json({ok:true,message:'Check your Gmail inbox to verify your account, then return here and sign in.'});
- }
- if(req.method==='POST'&&b.action==='resend_confirmation'){
-  const mail=email(b.email);
-  if(mail!==String(process.env.RDA_ADMIN_EMAIL||'').toLowerCase())return error(res,400,'Use your Redline Defense admin email address.');
-  const response=await fetch(process.env.RDA_SUPABASE_URL.replace(/\/$/,'')+'/auth/v1/resend',{
-   method:'POST',headers:{apikey:process.env.RDA_SUPABASE_ANON_KEY,'Content-Type':'application/json'},
-   body:JSON.stringify({type:'signup',email:mail})
-  });
-  if(response.status===429)return error(res,429,'Verification email limit reached. Please wait and try again.');
-  if(!response.ok)return error(res,400,'Unable to resend right now. Check your earlier confirmation email in Gmail.');
-  return res.status(202).json({ok:true,message:'A confirmation email has been requested. Check Gmail, including Spam and Promotions. Click the verification link, then return here to sign in.'});
- }
- if(req.method==='POST'&&b.action==='login'){
-  const mail=email(b.email),pass=String(b.password||'');
-  if(!mail||!pass||pass.length>300)return error(res,400,'Enter a valid admin email and password.');
-  const session=await auth({email:mail,password:pass},'password');
-  await requireAdmin(session.access_token);
-  return res.status(200).json({access_token:session.access_token,refresh_token:session.refresh_token,expires_in:session.expires_in});
- }
- if(req.method==='POST'&&b.action==='refresh'){
-  const session=await auth({refresh_token:clean(b.refresh_token,2000)},'refresh_token');
-  await requireAdmin(session.access_token);
-  return res.status(200).json({access_token:session.access_token,refresh_token:session.refresh_token,expires_in:session.expires_in});
- }
- const token=bearer(req);
- const admin=await requireAdmin(token);
+const {str,id,int,iso,list,get,create,update}=require('../lib/rda-calendar');
+const {isAdmin,json,enforceSameOrigin}=require('../lib/rda-auth');
+const statuses=['requested','contacted','deposit_pending','confirmed','cancelled','attended'];
+async function handle(req,res){
+ if(!isAdmin(req))return json(res,401,{error:'Your admin session has expired. Please sign in again.'});
  if(req.method==='GET'){
-  const [classes,enrollments,payments]=await Promise.all([
-   query('/rest/v1/rda_classes?select=*&order=starts_at.desc',{token}),
-   query('/rest/v1/rda_enrollments?select=*&order=created_at.desc',{token}),
-   query('/rest/v1/rda_payments?select=*&order=created_at.desc',{token})
-  ]);
-  return res.status(200).json({classes,enrollments,payments,admin:admin.email,notificationsConfigured:!!(process.env.RESEND_API_KEY&&process.env.RDA_NOTIFY_EMAIL&&process.env.RDA_FROM_EMAIL)});
+  const [classes,enrollments,payments]=await Promise.all([list('class'),list('request'),list('payment')]);
+  return json(res,200,{classes:classes.sort((a,b)=>b.starts_at.localeCompare(a.starts_at)),enrollments:enrollments.sort((a,b)=>b.created_at.localeCompare(a.created_at)),payments:payments.sort((a,b)=>b.created_at.localeCompare(a.created_at)),admin:process.env.RDA_ADMIN_EMAIL,notificationsConfigured:false});
  }
- if(req.method!=='POST')return error(res,405,'Method not allowed.');
+ if(req.method!=='POST')return json(res,405,{error:'Method not allowed.'});
+ if(!enforceSameOrigin(req,res))return;
+ const b=req.body||{};
  if(b.action==='create_class'){
-  const name=clean(b.title,160),start=new Date(b.starts_at||''),price=cents(b.price_cents),deposit=cents(b.deposit_cents),capacity=b.capacity===''||b.capacity==null?null:Number(b.capacity);
-  if(name.length<4||!Number.isFinite(start.getTime())||price===null||deposit===null||deposit>price||(capacity!==null&&(!Number.isInteger(capacity)||capacity<1||capacity>1000)))return error(res,400,'Check the class name, date, capacity, price and deposit.');
-  const item={title:name,starts_at:start.toISOString(),location:clean(b.location,160),price_cents:price,deposit_cents:deposit,capacity,active:true,visible:b.visible===true};
-  const rows=await query('/rest/v1/rda_classes',{method:'POST',body:item,token});return res.status(201).json({class:rows[0]});
+  const title=str(b.title,160),date=iso(b.starts_at),price=int(b.price_cents),deposit=int(b.deposit_cents),capacity=b.capacity===''||b.capacity==null?null:Number(b.capacity);
+  if(title.length<4||!date||price===null||deposit===null||deposit>price||(capacity!==null&&(!Number.isInteger(capacity)||capacity<1||capacity>1000)))return json(res,400,{error:'Check the class details, date, prices and capacity.'});
+  const row=await create('class',{title,starts_at:date,location:str(b.location,160),capacity:capacity??'',price_cents:price,deposit_cents:deposit,active:true,visible:b.visible===true});
+  return json(res,201,{class:row});
  }
  if(b.action==='edit_class'){
-  if(!uuid(b.id))return error(res,400,'Invalid class.');
-  const item={};if(typeof b.active==='boolean')item.active=b.active;if(typeof b.visible==='boolean')item.visible=b.visible;
-  if(b.title!==undefined){if(clean(b.title,160).length<4)return error(res,400,'Invalid class title.');item.title=clean(b.title,160)}
-  if(b.location!==undefined)item.location=clean(b.location,160);
-  if(b.capacity!==undefined){const n=b.capacity===''||b.capacity==null?null:Number(b.capacity);if(n!==null&&(!Number.isInteger(n)||n<1||n>1000))return error(res,400,'Invalid capacity.');item.capacity=n}
-  if(b.price_cents!==undefined){const n=cents(b.price_cents);if(n===null)return error(res,400,'Invalid price.');item.price_cents=n}
-  if(b.deposit_cents!==undefined){const n=cents(b.deposit_cents);if(n===null)return error(res,400,'Invalid deposit.');item.deposit_cents=n}
-  if(item.deposit_cents!==undefined||item.price_cents!==undefined){
-   const current=await query('/rest/v1/rda_classes?id=eq.'+encodeURIComponent(b.id)+'&select=price_cents,deposit_cents',{token});
-   if(!current?.length)return error(res,404,'Class not found.');
-   if((item.deposit_cents??current[0].deposit_cents)>(item.price_cents??current[0].price_cents))return error(res,400,'Deposit cannot exceed class price.');
-  }
-  if(!Object.keys(item).length)return error(res,400,'Nothing to update.');
-  await query('/rest/v1/rda_classes?id=eq.'+encodeURIComponent(b.id),{method:'PATCH',body:item,token});return res.status(200).json({ok:true});
+  const eventId=id(b.id);if(!eventId)return json(res,400,{error:'Invalid class ID.'});
+  const current=await get('class',eventId);const patch={};
+  if(b.title!==undefined){const name=str(b.title,160);if(name.length<4)return json(res,400,{error:'Invalid class name.'});patch.title=name}
+  if(b.location!==undefined)patch.location=str(b.location,160);
+  if(b.visible!==undefined)patch.visible=!!b.visible;
+  if(b.active!==undefined)patch.active=!!b.active;
+  if(b.capacity!==undefined){const c=b.capacity===''||b.capacity===null?null:Number(b.capacity);if(c!==null&&(!Number.isInteger(c)||c<1||c>1000))return json(res,400,{error:'Invalid capacity.'});patch.capacity=c??''}
+  if(b.price_cents!==undefined){const n=int(b.price_cents);if(n===null)return json(res,400,{error:'Invalid price.'});patch.price_cents=n}
+  if(b.deposit_cents!==undefined){const n=int(b.deposit_cents);if(n===null)return json(res,400,{error:'Invalid deposit.'});patch.deposit_cents=n}
+  if(Number(patch.deposit_cents??(current.extendedProperties?.private?.deposit_cents||0))>Number(patch.price_cents??(current.extendedProperties?.private?.price_cents||0)))return json(res,400,{error:'Deposit cannot exceed class price.'});
+  await update('class',eventId,patch);return json(res,200,{ok:true});
  }
  if(b.action==='status'){
-  if(!uuid(b.id)||!['requested','contacted','deposit_pending','confirmed','cancelled','attended'].includes(b.status))return error(res,400,'Invalid status.');
-  await query('/rest/v1/rpc/rda_set_status',{method:'POST',body:{p_id:b.id,p_status:b.status},token});
-  return res.status(200).json({ok:true});
+  const eId=id(b.id),status=str(b.status,30);if(!eId||!statuses.includes(status))return json(res,400,{error:'Invalid status.'});
+  const event=await get('request',eId);const p=event.extendedProperties?.private||{};
+  if(status==='confirmed'&&!['confirmed','attended'].includes(p.status)){
+   const classes=await list('class'),c=classes.find(x=>x.id===p.class_id);
+   if(!c)return json(res,400,{error:'The class no longer exists.'});
+   if(c.capacity){const students=await list('request');const filled=students.filter(x=>x.class_id===c.id&&['confirmed','attended'].includes(x.status)).length;if(filled>=c.capacity)return json(res,409,{error:'This class is full.'})}
+  }
+  await update('request',eId,{status});return json(res,200,{ok:true});
  }
  if(b.action==='payment'){
-  const amount=Number(b.amount_cents);
-  if(!uuid(b.id)||!['deposit','balance','refund'].includes(b.kind)||!['cash','zelle','card_external','bank','other'].includes(b.method)||!Number.isInteger(amount)||Math.abs(amount)>100000000||amount===0)return error(res,400,'Invalid payment.');
-  if((b.kind==='refund'&&amount>=0)||(b.kind!=='refund'&&amount<=0))return error(res,400,'Use a positive payment amount or a negative refund.');
-  const students=await query('/rest/v1/rda_enrollments?id=eq.'+encodeURIComponent(b.id)+'&select=id',{token});
-  if(!students?.length)return error(res,404,'Student request not found.');
-  await query('/rest/v1/rda_payments',{method:'POST',body:{enrollment_id:b.id,kind:b.kind,method:b.method,amount_cents:amount,reference:clean(b.reference,120),note:clean(b.note,500)},token});
-  return res.status(201).json({ok:true});
+  const eId=id(b.id),amt=Number(b.amount_cents),kind=str(b.kind,30),method=str(b.method,30);
+  if(!eId||!Number.isSafeInteger(amt)||!amt||Math.abs(amt)>100000000||!['deposit','balance','refund'].includes(kind)||!['cash','zelle','card_external','bank','other'].includes(method)||(kind==='refund'&&amt>0)||(kind!=='refund'&&amt<0))return json(res,400,{error:'Invalid payment details.'});
+  await get('request',eId);
+  await create('payment',{enrollment_id:eId,amount_cents:amt,kind,method,reference:str(b.reference,120),note:str(b.note,500)});
+  return json(res,201,{ok:true});
  }
- return error(res,400,'Unknown action.');
+ return json(res,400,{error:'Unknown action.'});
 }
-module.exports=async(req,res)=>{try{await run(req,res)}catch(e){if(!res.headersSent)error(res,[400,401,403,404,409,429,503].includes(e.status)?e.status:500,[401,403,404,409].includes(e.status)?e.message:'Could not complete the request. Try again.');}};
+module.exports=async(req,res)=>{try{return await handle(req,res)}catch(e){return json(res,[400,401,403,404,409].includes(e.status)?e.status:503,{error:[400,404,409].includes(e.status)?e.message:'The enrollment calendar is unavailable. Please try again.'})}};

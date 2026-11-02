@@ -136,7 +136,7 @@
     "sameAs":[]
   }
   </script>
-</head>
+<link rel="stylesheet" href="/assets/reservations.css?v=1"></head>
 <body>
   <nav class="nav" aria-label="Primary navigation">
     <div class="wrap navin">
@@ -159,7 +159,7 @@
         <span class="brand-copy"><b><strong>Redline</strong> Defense Academy</b><small>Train • Prepare • Protect</small></span>
       </a>
       <div class="links">
-        <a href="#training">Training</a>
+        <a href="#training">Training</a><a href="#reserve">Reserve a Seat</a>
         <a href="#instructor">Instructor</a>
         <a href="#faq">FAQ</a>
         <a class="btn btn-primary" href="tel:+15402056500">Call 540-205-6500</a>
@@ -341,7 +341,30 @@
       </div>
     </section>
 
-    <section id="contact">
+    <section id="reserve" class="reserve-section">
+ <div class="wrap reserve-layout">
+  <div><div class="eyebrow">Training Registration</div><h2>Reserve Your <span class="red">Seat.</span></h2>
+  <p>Select an upcoming Redline Defense Academy class and request a seat. We will review your details, answer questions, and confirm the next steps.</p>
+  <p><strong>Requests are not confirmed registrations.</strong> Enrollment is subject to available seats and staff approval. Deposits are arranged separately; this form never collects card payments.</p>
+  <p id="reserveStatus" class="reserve-status">Checking upcoming classes…</p>
+  <div class="reserve-fallback hidden" id="reserveFallback"><a class="btn btn-primary" href="sms:+15402056500?&body=Hi%20Redline%20Defense%20Academy%2C%20I%20want%20to%20request%20a%20class%20seat.">Text for Upcoming Dates</a></div>
+  </div>
+  <div class="reserve-card">
+  <form id="reserveForm" class="hidden">
+   <label>Choose a Class<select id="reserveClass" required><option value="">Select a class</option></select></label>
+   <p id="reserveClassDetail" class="small-note"></p>
+   <label>Full Name<input id="reserveName" autocomplete="name" maxlength="120" required></label>
+   <label>Email<input id="reserveEmail" type="email" autocomplete="email" maxlength="254" required></label>
+   <label>Phone<input id="reservePhone" type="tel" autocomplete="tel" maxlength="30" required></label>
+   <label>Questions (optional)<textarea id="reserveNotes" maxlength="800" placeholder="Anything you'd like the academy to know?"></textarea></label>
+   <label class="hp" aria-hidden="true">Website<input id="reserveWebsite" tabindex="-1" autocomplete="off"></label>
+   <button id="reserveSubmit" type="submit" class="btn btn-primary">Request My Seat</button>
+   <p class="small-note">We use your details to contact you about this class request. No payment information is collected here.</p>
+  </form>
+  </div>
+ </div>
+</section>
+<section id="contact">
       <div class="wrap">
         <div class="cta">
           <div>
@@ -393,5 +416,5 @@
       }catch(e){el.style.display='none'}
     });
   </script>
-</body>
+<script src="/assets/seat-reserve.js?v=1"></script></body>
 </html>

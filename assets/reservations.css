@@ -1,0 +1,13 @@
+/* Redline Defense Academy seat request */
+.reserve-section{padding:68px 0;background:#0b1017;border-top:1px solid #26313e}
+.reserve-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(340px,1fr);gap:38px;align-items:start}
+.reserve-section h2{font-size:clamp(2rem,4vw,3rem);line-height:1.08;margin:14px 0}
+.reserve-section p{color:#b5bfcb;line-height:1.6}
+.reserve-status{margin:12px 0 0;color:#dce2ea;font-size:.92rem}.reserve-status.success{color:#8ce1b0}.reserve-status.unavailable{color:#ffd0c7}
+.reserve-card{padding:24px;border:1px solid #384251;border-radius:14px;background:linear-gradient(140deg,#17212c,#090d12);box-shadow:0 18px 50px #0008}
+.reserve-card form{display:grid;gap:13px}.reserve-card label{display:grid;gap:5px;font-size:.83rem;font-weight:750;color:#ebeff6}
+.reserve-card input,.reserve-card select,.reserve-card textarea{width:100%;border:1px solid #3b4656;border-radius:8px;background:#0b1118;color:white;padding:12px;min-height:44px;font:inherit}
+.reserve-card textarea{resize:vertical;min-height:90px}.reserve-card .hp{position:absolute;width:1px;height:1px;overflow:hidden;left:-9999px}
+.reserve-card .hidden{display:none!important}.reserve-card .small-note{font-size:.78rem;color:#a8b6c7;margin:0}
+.reserve-fallback{margin:16px 0}.reserve-fallback.hidden{display:none}
+@media(max-width:740px){.reserve-layout{grid-template-columns:1fr}.reserve-section{padding:42px 0}.reserve-card{padding:18px}}

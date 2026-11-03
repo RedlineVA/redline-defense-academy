@@ -58,7 +58,9 @@
    const b={action:id?'edit_class':'create_class',title:$('classTitle').value,location:$('classLocation').value,
     capacity:$('classCapacity').value,price_cents:Math.round(Number($('classPrice').value)*100),deposit_cents:Math.round(Number($('classDeposit').value)*100),
     visible:$('classVisible').checked,offers};
-   if(id){b.id=id;b.active=$('classActive').checked}else b.starts_at=new Date($('classStart').value).toISOString();
+   const selected=rdaClassStartValue(id);if(!selected)return;
+   if(id){b.id=id;b.active=$('classActive').checked;if(selected.changed)b.starts_at=selected.startsAt}
+   else b.starts_at=selected.startsAt;
    await run(b);
   };
  };

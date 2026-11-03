@@ -4,6 +4,41 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const money=c=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format((Number(c)||0)/100);
 const dateTime=v=>v?new Date(v).toLocaleString('en-US',{timeZone:'America/New_York',month:'short',day:'numeric',year:'numeric',hour:'numeric',minute:'2-digit',timeZoneName:'short'}):'—';
 const state={access:'',classes:[],enrollments:[],payments:[],admin:''};
+const rdaEasternParts=new Intl.DateTimeFormat('en-US',{
+ timeZone:'America/New_York',year:'numeric',month:'2-digit',day:'2-digit',
+ hour:'2-digit',minute:'2-digit',hourCycle:'h23'
+});
+function rdaEasternInput(iso){
+ const date=new Date(iso);if(!Number.isFinite(date.getTime()))return '';
+ const pieces=rdaEasternParts.formatToParts(date);
+ const part=kind=>pieces.find(p=>p.type===kind)?.value||'';
+ return part('year')+'-'+part('month')+'-'+part('day')+'T'+part('hour')+':'+part('minute');
+}
+function rdaEasternISO(input){
+ const match=/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(String(input||''));
+ if(!match)throw Error('Choose a class date and time.');
+ const [,yy,mm,dd,hh,mi]=match;
+ const naive=Date.UTC(Number(yy),Number(mm)-1,Number(dd),Number(hh),Number(mi));
+ if(!Number.isFinite(naive))throw Error('Invalid class date.');
+ const options=[-240,-300].map(offset=>new Date(naive-offset*60000))
+   .filter(date=>rdaEasternInput(date.toISOString())===input)
+   .sort((a,b)=>a-b);
+ if(!options.length)throw Error('That local time does not exist in Eastern Time due to daylight saving. Choose another time.');
+ return options[0].toISOString();
+}
+function rdaClassStartValue(id){
+ const input=$('classStart')?.value;
+ let startsAt;
+ try{startsAt=rdaEasternISO(input)}catch(err){message(err.message,true);return null}
+ const previous=id?cls(id)?.starts_at:'';
+ const changed=!previous||rdaEasternInput(previous)!==input;
+ if(changed&&previous){
+  const affected=state.enrollments.filter(e=>e.class_id===id&&activeStatuses.includes(e.status));
+  if(affected.length&&!window.confirm('This class already has '+affected.length+' confirmed registration(s). Changing its date will update the public schedule, but will NOT automatically email students who received an earlier confirmation. Save the new date and contact those students?'))return null;
+ }
+ return {startsAt,changed};
+}
+
 const statusLabels={requested:'Requested',contacted:'Contacted',deposit_pending:'Deposit Pending',confirmed:'Confirmed',cancelled:'Cancelled',attended:'Attended'};
 const activeStatuses=['confirmed','attended'];
 let calendarMonth=new Date(new Date().getFullYear(),new Date().getMonth(),1);
@@ -66,13 +101,14 @@ function showRequest(id){const e=state.enrollments.find(x=>x.id===id);if(!e)retu
 function showClass(id){
  const c=id?cls(id):null,edit=!!c;
  let form='<form id="classForm" class="form-grid"><label class="wide">Class Name<input id="classTitle" required minlength="4" value="'+esc(c?.title||'')+'"></label>';
- if(!edit)form+='<label>Date & Time (Eastern)<input type="datetime-local" id="classStart" required></label>';
+ form+='<label>Date & Time (Eastern)<input type="datetime-local" id="classStart" required value="'+esc(edit?rdaEasternInput(c.starts_at):'')+'"></label>';
  form+='<label>Location<input id="classLocation" value="'+esc(c?.location||'')+'"></label><label>Capacity<input id="classCapacity" type="number" min="1" max="1000" placeholder="No limit" value="'+esc(c?.capacity??'')+'"></label><label>Price ($)<input id="classPrice" type="number" min="0" step="0.01" required value="'+(Number(c?.price_cents||0)/100).toFixed(2)+'"></label><label>Deposit ($)<input id="classDeposit" type="number" min="0" step="0.01" required value="'+(Number(c?.deposit_cents||0)/100).toFixed(2)+'"></label><label class="wide check-line"><input id="classVisible" type="checkbox" '+(!c||c.visible?'checked':'')+'>Publish class on website schedule</label>';
+ if(edit&&c.reschedule_notice_required)form+='<p class="wide schedule-alert">This class was rescheduled. Previously confirmed students may still have the old date in their confirmation email. Contact them with the updated class details.</p>';
  if(edit)form+='<label class="wide check-line"><input id="classActive" type="checkbox" '+(c.active?'checked':'')+'>Class active</label>';
  form+='<div class="wide toolbar"><button class="btn good">Save Class</button></div></form>';
  if(edit)form+='<h3 class="roster-title">Roster · '+seats(c.id)+' confirmed</h3><div class="roster-list">'+(state.enrollments.filter(e=>e.class_id===c.id).map(e=>'<div class="list-item"><div><b>'+esc(e.full_name)+'</b><div class="muted">'+esc(statusLabels[e.status])+'</div></div><button class="btn small" data-request="'+e.id+'">Open</button></div>').join('')||'<div class="muted">No requests yet.</div>')+'</div>';
  modal(edit?'Edit Class & Roster':'Create Class',form);
- $('classForm').onsubmit=ev=>{ev.preventDefault();const b={action:edit?'edit_class':'create_class',title:$('classTitle').value,location:$('classLocation').value,capacity:$('classCapacity').value,price_cents:Math.round(Number($('classPrice').value)*100),deposit_cents:Math.round(Number($('classDeposit').value)*100),visible:$('classVisible').checked};if(edit){b.id=id;b.active=$('classActive').checked}else b.starts_at=new Date($('classStart').value).toISOString();run(b)};
+ $('classForm').onsubmit=ev=>{ev.preventDefault();const b={action:edit?'edit_class':'create_class',title:$('classTitle').value,location:$('classLocation').value,capacity:$('classCapacity').value,price_cents:Math.round(Number($('classPrice').value)*100),deposit_cents:Math.round(Number($('classDeposit').value)*100),visible:$('classVisible').checked};const selected=rdaClassStartValue(id);if(!selected)return;if(edit){b.id=id;b.active=$('classActive').checked;if(selected.changed)b.starts_at=selected.startsAt}else b.starts_at=selected.startsAt;run(b)};
 }
 function showPayment(id){
  if(!state.enrollments.length){message('No student requests to record a payment for.',true);return}

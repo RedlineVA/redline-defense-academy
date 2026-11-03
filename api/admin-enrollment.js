@@ -44,6 +44,19 @@ async function handle(req,res){
   const eventId=id(b.id);if(!eventId)return json(res,400,{error:'Invalid class ID.'});
   const current=await get('class',eventId);const patch={};
   if(b.title!==undefined){const name=str(b.title,160);if(name.length<4)return json(res,400,{error:'Invalid class name.'});patch.title=name}
+  if(b.starts_at!==undefined){
+   const requestedStart=iso(b.starts_at);
+   if(!requestedStart)return json(res,400,{error:'Enter a valid class date and time.'});
+   const previousStart=current.extendedProperties?.private?.starts_at||'';
+   if(requestedStart!==previousStart){
+    patch.starts_at=requestedStart;
+    patch.previous_starts_at=previousStart;
+    patch.rescheduled_at=new Date().toISOString();
+    const students=await list('request');
+    const confirmed=students.filter(student=>student.class_id===eventId&&['confirmed','attended'].includes(student.status));
+    if(confirmed.length)patch.reschedule_notice_required=true;
+   }
+  }
   if(b.location!==undefined)patch.location=str(b.location,160);
   if(b.visible!==undefined)patch.visible=!!b.visible;
   if(b.active!==undefined)patch.active=!!b.active;
@@ -55,7 +68,9 @@ async function handle(req,res){
    const offers=normalizeOffers(b.offers);
    patch.offers=JSON.stringify(offers);
   }
-  await update('class',eventId,patch);return json(res,200,{ok:true});
+  await update('class',eventId,patch);
+  return json(res,200,{ok:true,dateChanged:!!patch.starts_at,
+   message:patch.starts_at?(patch.reschedule_notice_required?'Class rescheduled. Notify your confirmed students of the new date and time.':'Class date and time updated on the public schedule.'):'Class updated.'});
  }
  if(b.action==='status'){
   const eId=id(b.id),status=str(b.status,30);if(!eId||!statuses.includes(status))return json(res,400,{error:'Invalid status.'});
